@@ -1,25 +1,19 @@
-<!DOCTYPE html>
-<html lang="ja">
+<!DOCTYPE html><html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>星丸セレクター + 分割機能</title>
-
-  <!-- PWA関連 -->
-  <link rel="manifest" href="manifest.json" />
+  <title>星丸セレクター + 分割機能</title>  <!-- PWA対応 -->  <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" />
   <meta name="theme-color" content="#FFB6C1" />
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('SW registered', reg))
-          .catch(err => console.warn('SW failed', err));
+          .then(reg => console.log('Service Worker registered', reg))
+          .catch(err => console.warn('Service Worker registration failed', err));
       });
     }
-  </script>
-
-  <style>
+  </script>  <style>
     :root {
       --primary: #FFB6C1;
       --primary-dark: #e69aac;
@@ -29,7 +23,8 @@
     }
     *, *::before, *::after { box-sizing: border-box; }
     body {
-      margin: 0; padding: 1em;
+      margin: 0;
+      padding: 1em;
       font-family: sans-serif;
       background: var(--bg);
       color: var(--text);
@@ -43,16 +38,15 @@
       margin-bottom: 1em;
       text-align: center;
     }
-    .controls {
-      margin-bottom: 1em;
-    }
-    .controls label, .controls input, .controls button {
+    .controls { margin-bottom: 1em; }
+    .controls label,
+    .controls input,
+    .controls button {
       margin-right: .5em;
       vertical-align: middle;
     }
-    input[type=file], input[type=number] {
-      padding: .4em;
-    }
+    input[type=file],
+    input[type=number] { padding: .4em; }
     textarea {
       width: 100%;
       height: 200px;
@@ -72,12 +66,8 @@
       cursor: pointer;
       font-size: .95em;
     }
-    button:hover {
-      background: var(--primary-dark);
-    }
-    #segments {
-      margin-top: 1em;
-    }
+    button:hover { background: var(--primary-dark); }
+    #segments { margin-top: 1em; }
     .segment {
       border: 1px solid var(--border);
       border-radius: 4px;
@@ -102,13 +92,8 @@
       top: 1em;
       right: 1em;
     }
-    .segment .starExtractBtn {
-      display: block;
-      margin-top: .5em;
-    }
-    #combineActions {
-      margin: 1em 0;
-    }
+    .segment .starExtractBtn { display: block; margin-top: .5em; }
+    #combineActions { margin: 1em 0; }
     #combineResult {
       white-space: pre-wrap;
       background: #f7f7f7;
@@ -117,15 +102,10 @@
       border-radius: 4px;
       margin-top: .5em;
     }
-    #charCount {
-      margin-left: 1em;
-    }
-  </style>
-</head>
+    #charCount { margin-left: 1em; }
+  </style></head>
 <body>
-  <header>星丸セレクター + 分割機能</header>
-
-  <div class="controls">
+  <header>星丸セレクター + 分割機能</header>  <div class="controls">
     <label>ファイル読み込む:<input type="file" id="fileInput" accept=".txt"></label>
     <label>モード:</label>
     <label><input type="radio" name="mode" value="chars" checked>文字数</label>
@@ -133,27 +113,17 @@
     <label><input type="radio" name="mode" value="star">★で抽出</label>
     <label>サイズ:<input type="number" id="sliceSize" value="10000" min="1"></label>
     <span id="charCount">文字数: 0</span>
-  </div>
-
-  <textarea id="input" oninput="updateCharCount()" placeholder="テキストを入力..."></textarea>
-
-  <div class="controls">
+  </div>  <textarea id="input" oninput="updateCharCount()" placeholder="テキストを入力..."></textarea>  <div class="controls">
     <button onclick="splitText()">分割</button>
     <button onclick="resetSegmentsOnly()">やり直し（分割だけ）</button>
     <button onclick="clearAll()">クリア（全部）</button>
-  </div>
-
-  <div id="segments"></div>
-
-  <div id="combineActions" style="display:none">
+  </div>  <div id="segments"></div>  <div id="combineActions" style="display:none">
     <button onclick="combineSelected()">結合</button>
     <span>結合文字数:<span id="combineCount">0</span></span>
     <button onclick="saveCombine()">保存結合</button>
     <button onclick="shareCombine()">共有結合</button>
     <pre id="combineResult"></pre>
-  </div>
-
-<script>
+  </div><script>
 let originalText = '';
 const input = document.getElementById('input');
 const segmentsDiv = document.getElementById('segments');
@@ -164,8 +134,7 @@ function updateCharCount() {
 }
 
 document.getElementById('fileInput').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
     originalText = ev.target.result;
@@ -194,19 +163,13 @@ function splitText() {
   let parts = [];
 
   if (mode === 'chars') {
-    for (let i = 0; i < text.length; i += size) {
-      parts.push(text.slice(i, i + size));
-    }
+    for (let i = 0; i < text.length; i += size) parts.push(text.slice(i, i + size));
   } else if (mode === 'ptag') {
-    const pblocks = text.match(/<p>[\\s\\S]*?<\\/p>/gi) || [];
+    const pblocks = text.match(/<p>[\s\S]*?<\/p>/gi) || [];
     let current = '';
     pblocks.forEach(block => {
-      if (current.length + block.length > size && current) {
-        parts.push(current);
-        current = block;
-      } else {
-        current += block;
-      }
+      if (current.length + block.length > size && current) { parts.push(current); current = block; }
+      else current += block;
     });
     if (current) parts.push(current);
   } else if (mode === 'star') {
@@ -214,40 +177,13 @@ function splitText() {
   }
 
   parts.forEach((part, i) => {
-    const seg = document.createElement('div');
-    seg.className = 'segment';
-
-    const h3 = document.createElement('h3');
-    h3.textContent = `Part ${i+1}`;
-    seg.appendChild(h3);
-
-    const chk = document.createElement('input');
-    chk.type = 'checkbox';
-    seg.appendChild(chk);
-
-    const ta = document.createElement('textarea');
-    ta.value = part;
-    seg.appendChild(ta);
-
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = '保存';
-    saveBtn.onclick = () => downloadText(ta.value, `part${i+1}.txt`);
-    seg.appendChild(saveBtn);
-
-    const shareBtn = document.createElement('button');
-    shareBtn.textContent = '共有';
-    shareBtn.onclick = () => shareText(ta.value);
-    seg.appendChild(shareBtn);
-
-    const starBtn = document.createElement('button');
-    starBtn.textContent = '★抽出';
-    starBtn.className = 'starExtractBtn';
-    starBtn.onclick = () => {
-      const matches = ta.value.match(/★[^★]+★/g) || [];
-      ta.value = matches.map(s => s.slice(1, -1)).join('\\n');
-    };
-    seg.appendChild(starBtn);
-
+    const seg = document.createElement('div'); seg.className = 'segment';
+    const h3 = document.createElement('h3'); h3.textContent = `Part ${i+1}`; seg.appendChild(h3);
+    const chk = document.createElement('input'); chk.type = 'checkbox'; seg.appendChild(chk);
+    const ta = document.createElement('textarea'); ta.value = part; seg.appendChild(ta);
+    const saveBtn = document.createElement('button'); saveBtn.textContent = '保存'; saveBtn.onclick = () => downloadText(ta.value, `part${i+1}.txt`); seg.appendChild(saveBtn);
+    const shareBtn = document.createElement('button'); shareBtn.textContent = '共有'; shareBtn.onclick = () => shareText(ta.value); seg.appendChild(shareBtn);
+    const starBtn = document.createElement('button'); starBtn.textContent = '★抽出'; starBtn.className = 'starExtractBtn'; starBtn.onclick = () => { const matches = ta.value.match(/★[^★]+★/g)||[]; ta.value = matches.map(s => s.slice(1,-1)).join('\n'); }; seg.appendChild(starBtn);
     segmentsDiv.appendChild(seg);
   });
 
@@ -256,42 +192,14 @@ function splitText() {
 
 function combineSelected() {
   let combined = '';
-  document.querySelectorAll('.segment').forEach(seg => {
-    if (seg.querySelector('input').checked) {
-      combined += seg.querySelector('textarea').value + '\\n';
-    }
-  });
+  document.querySelectorAll('.segment').forEach(seg => { if(seg.querySelector('input').checked) combined += seg.querySelector('textarea').value + '\n'; });
   document.getElementById('combineResult').textContent = combined;
   document.getElementById('combineCount').textContent = combined.length;
 }
 
-function saveCombine() {
-  const t = document.getElementById('combineResult').textContent;
-  if (!t) return;
-  downloadText(t, 'combined.txt');
-}
-
-function shareCombine() {
-  const t = document.getElementById('combineResult').textContent;
-  if (!t) return;
-  shareText(t);
-}
-
-function downloadText(text, filename) {
-  const b = new Blob([text], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(b);
-  a.download = filename;
-  a.click();
-}
-
-function shareText(text) {
-  if (navigator.share) {
-    navigator.share({ text });
-  } else {
-    navigator.clipboard.writeText(text).then(() => alert('コピーしました'));
-  }
-}
-</script>
-</body>
-</html>
+function saveCombine() { const t = document.getElementById('combineResult').textContent; if(!t)return; downloadText(t,'combined.txt'); }
+function shareCombine() { const t = document.getElementById('combineResult').textContent; if(!t)return; shareText(t); }
+function downloadText(text, filename) { const b=new Blob([text],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=filename; a.click(); }
+function shareText(text) { if(navigator.share) navigator.share({text}); else navigator.clipboard.writeText(text).then(()=>alert('コピーしました')); }
+</script></body>
+      </html>
