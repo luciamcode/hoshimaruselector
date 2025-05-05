@@ -1,7 +1,7 @@
 {
   "name": "ことば一撰",
   "short_name": "一撰",
-  "start_url": "./",
+  "start_url": "./?v=99",
   "display": "standalone",
   "background_color": "#fafafa",
   "theme_color": "#212121",
