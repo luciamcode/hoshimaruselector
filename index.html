@@ -134,6 +134,20 @@
     <span>結合文字数:<span id="combineCount">0</span></span>
     <button onclick="saveCombine()">保存結合</button>
     <button onclick="shareCombine()">共有結合</button>
+
+<!-- 各庵へ送信 -->
+<div style="margin-top: 0.5em;">
+  <button onclick="openWithURL('https://luciamcode.github.io/PSA_kotonoha/', document.getElementById('combineResult').textContent)">→ PSA</button>
+  <button onclick="openWithURL('https://luciamcode.github.io/hana_utsurini/', document.getElementById('combineResult').textContent)">→ うつりに</button>
+  <button onclick="openWithURL('https://luciamcode.github.io/kotonoha_editor/', document.getElementById('combineResult').textContent)">→ エディタ</button>
+</div>
+
+
+
+
+
+
+
     <pre id="combineResult"></pre>
   </div>
   <script>
