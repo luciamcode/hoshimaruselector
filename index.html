@@ -1,57 +1,257 @@
-<!DOCTYPE html><html lang="ja">
-<head>
+<!DOCTYPE html><html lang="ja"><head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ことば一撰 - 言の葉を一枚ずつ撰びとる</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ことば一撰〜言の葉を選る庵</title>
+  <!-- PWA対応 -->
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="kotoba_icon-192.png" />
   <meta name="theme-color" content="#fafafa" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log('Service Worker registered'))
+          .catch(err => console.warn('Service Worker registration failed', err));
+      });
+    }
+  </script>
   <style>
-    /* 省略：既存スタイルそのまま */
+    :root {
+      --primary: #212121;
+      --primary-dark: #424242;
+      --bg: #fafafa;
+      --text: #212121;
+      --border: #e0e0e0;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 1em;
+      font-family: sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background: var(--primary);
+      color: var(--bg);
+      padding: .75em 1em;
+      font-size: 1.25em;
+      border-radius: 4px;
+      margin-bottom: 1em;
+      text-align: center;
+    }
+    .controls { margin-bottom: 1em; }
+    .controls label, .controls input, .controls button {
+      margin-right: .5em;
+      vertical-align: middle;
+    }
+    input[type=file], input[type=number] { padding: .4em; }
+    textarea {
+      width: 100%;
+      height: 200px;
+      padding: .75em;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: .95em;
+      background: var(--bg);
+      color: var(--text);
+      resize: vertical;
+    }
+    button {
+      padding: .5em 1em;
+      background: var(--primary);
+      border: 1px solid var(--primary-dark);
+      color: var(--bg);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: .95em;
+      margin-top: .5em;
+      margin-right: .5em;
+    }
+    button:hover { background: var(--primary-dark); }
+    #segments { margin-top: 1em; }
+    .segment {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1em;
+      margin-bottom: 1em;
+      position: relative;
+    }
+    .segment h3 {
+      margin: 0 0 .5em 0;
+      font-size: 1em;
+      color: var(--primary-dark);
+    }
+    .segment textarea {
+      width: 100%;
+      height: 100px;
+      padding: .5em;
+      margin-bottom: .5em;
+      font-family: monospace;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .segment input[type=checkbox] {
+      position: absolute;
+      top: 1em;
+      right: 1em;
+    }
+    .segment .starExtractBtn { display: inline-block; }
+    #combineActions {
+      margin: 1em 0;
+      display: none;
+    }
+    #combineResult {
+      white-space: pre-wrap;
+      background: var(--bg);
+      padding: .75em;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-top: .5em;
+    }
   </style>
 </head>
 <body>
-  <h1>ことば一撰</h1>
-  <p class="subtitle">〜 言の葉を一枚ずつ撰びとる 〜</p>  <!-- チャンク編集エリア -->  <div id="editorArea">
-    <!-- 動的に生成されたチャンク群 -->
-  </div>  <!-- 結合＆共有 -->  <div style="margin-top:1rem;">
-    <button onclick="exportCombined()">結合＆共有</button>
-    <textarea id="resultArea" rows="5" readonly></textarea>
-  </div>  <!-- 送信先セレクト＆送信ボタン -->  <div style="margin-top:1rem;">
-    <label for="sendTarget">送信先：</label>
-    <select id="sendTarget">
-      <option value="https://luciamcode.github.io/PSA_kotonoha/">ことのはPSA</option>
-      <option value="https://luciamcode.github.io/hana_utsurini/">うつりにけりな</option>
-      <option value="https://luciamcode.github.io/kotonoha_editor/">言の葉エディタ</option>
-    </select>
-    <button onclick="sendCheckedChunks()">送信</button>
-  </div>  <script>
-    // チェック済みチャンクを結合して指定先URLへ渡す
-    function sendCheckedChunks() {
-      const areas = document.querySelectorAll("textarea[id^='frag']");
-      const selected = [];
-      areas.forEach((area, index) => {
-        const cb = document.getElementById(`check${index}`);
-        if (cb && cb.checked) {
-          selected.push(area.value.trim());
-        }
-      });
-      if (selected.length === 0) {
-        alert("送信するチャンクをひとつ以上選んでください");
-        return;
-      }
-      const combined = selected.join("\n\n");
-      const encoded = encodeURIComponent(combined);
-      const target = document.getElementById("sendTarget").value;
-      window.open(`${target}?text=${encoded}`, "_blank");
+  <header>ことば一撰〜言の葉を選る庵</header>
+  <div class="controls">
+    <label>ファイル読み込む:<input type="file" id="fileInput" accept=".txt"></label>
+    <label>モード:</label>
+    <label><input type="radio" name="mode" value="chars" checked>文字数</label>
+    <label><input type="radio" name="mode" value="ptag">pタグ単位</label>
+    <label><input type="radio" name="mode" value="star">★で抽出</label>
+    <label>サイズ:<input type="number" id="sliceSize" value="10000" min="1"></label>
+    <span id="charCount">文字数: 0</span>
+  </div>
+  <textarea id="input" oninput="updateCharCount()" placeholder="テキストを入力..."></textarea>
+  <div class="controls">
+    <button onclick="splitText()">分割</button>
+    <button onclick="resetSegmentsOnly()">やり直し（分割だけ）</button>
+    <button onclick="clearAll()">クリア（全部）</button>
+  </div>
+  <div id="segments"></div>
+  <div id="combineActions">
+    <button onclick="combineSelected()">結合</button>
+    <span>結合文字数:<span id="combineCount">0</span></span>
+    <button onclick="saveCombine()">保存結合</button>
+    <button onclick="shareCombine()">共有結合</button>
+    <pre id="combineResult"></pre>
+  </div>
+  <script>
+    // PWA Service Worker 登録
+    // 共通テキスト送信関数
+    function openWithURL(url, text) {
+      const encoded = encodeURIComponent(text);
+      window.open(`${url}?text=${encoded}`, '_blank');
     }
-
-    // ページ読み込み時に ?text= パラメータを input へ挿入
+    // URLパラメータ受信
     window.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(window.location.search);
       const incoming = params.get('text');
       if (incoming) {
         document.getElementById('input').value = decodeURIComponent(incoming);
+        updateCharCount();
       }
     });
-  </script></body>
+    let originalText = '';
+    const input = document.getElementById('input');
+    const segmentsDiv = document.getElementById('segments');
+    const charCountSpan = document.getElementById('charCount');
+    function updateCharCount() {
+      charCountSpan.textContent = `文字数: ${input.value.length}`;
+    }
+    document.getElementById('fileInput').addEventListener('change', e => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => { originalText = ev.target.result; input.value = originalText; updateCharCount(); };
+      reader.readAsText(file, 'UTF-8');
+    });
+    function resetSegmentsOnly() {
+      segmentsDiv.innerHTML = '';
+      document.getElementById('combineActions').style.display = 'none';
+    }
+    function clearAll() {
+      input.value = '';
+      updateCharCount();
+      resetSegmentsOnly();
+    }
+    function splitText() {
+      resetSegmentsOnly();
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const size = parseInt(document.getElementById('sliceSize').value, 10) || 1;
+      const text = input.value;
+      let parts = [];
+      if (mode === 'chars') {
+        for (let i = 0; i < text.length; i += size) parts.push(text.slice(i, i + size));
+      } else if (mode === 'ptag') {
+        const pblocks = text.match(/<p>[\s\S]*?<\/p>/gi) || [];
+        let current = '';
+        pblocks.forEach(block => {
+          if (current.length + block.length > size && current) { parts.push(current); current = block; } else { current += block; }
+        });
+        if (current) parts.push(current);
+      } else if (mode === 'star') {
+        parts = (text.match(/★[^★]+★/g) || []).map(s => s.slice(1, -1));
+      }
+      parts = parts.map(part => part.replace(/<\/p>/g, '</p>\n'));
+      parts.forEach((part, i) => {
+        const seg = document.createElement('div'); seg.className = 'segment';
+        const h3 = document.createElement('h3'); h3.textContent = `Part ${i+1}`; seg.appendChild(h3);
+        const chk = document.createElement('input'); chk.type = 'checkbox'; chk.id = `check${i}`; seg.appendChild(chk);
+        const ta = document.createElement('textarea'); ta.value = part; seg.appendChild(ta);
+        const saveBtn = document.createElement('button'); saveBtn.textContent = '保存'; saveBtn.onclick = () => downloadText(ta.value, `part${i+1}.txt`); seg.appendChild(saveBtn);
+        const shareBtn = document.createElement('button'); shareBtn.textContent = '共有'; shareBtn.onclick = () => {
+          let t = ta.value;
+          if (confirm('コードブロック付きで共有しますか？')) t = '```
+' + t + '
+```';
+          shareText(t);
+        }; seg.appendChild(shareBtn);
+        const starBtn = document.createElement('button'); starBtn.textContent = '★抽出'; starBtn.className = 'starExtractBtn'; starBtn.onclick = () => {
+          const matches = ta.value.match(/★[^★]+★/g) || [];
+          ta.value = matches.map(s => s.slice(1, -1)).join('\n');
+        }; seg.appendChild(starBtn);
+        // 追加：各庵送信ボタン
+        const targets = [
+          {label:'PSA', url:'https://luciamcode.github.io/PSA_kotonoha/'},
+          {label:'うつりに', url:'https://luciamcode.github.io/hana_utsurini/'},
+          {label:'エディタ', url:'https://luciamcode.github.io/kotonoha_editor/'},
+        ];
+        targets.forEach(tgt => {
+          const btn = document.createElement('button'); btn.textContent = `→ ${tgt.label}`;
+          btn.onclick = () => openWithURL(tgt.url, ta.value);
+          seg.appendChild(btn);
+        });
+        segmentsDiv.appendChild(seg);
+      });
+      if (parts.length) document.getElementById('combineActions').style.display = 'block';
+    }
+    function combineSelected() {
+      let combined = '';
+      document.querySelectorAll('.segment').forEach((seg, idx) => {
+        const cb = seg.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) combined += seg.querySelector('textarea').value + '\n';
+      });
+      const result = document.getElementById('combineResult'); result.textContent = combined;
+      document.getElementById('combineCount').textContent = combined.length;
+    }
+    function saveCombine() {
+      const t = document.getElementById('combineResult').textContent; if (!t) return; downloadText(t, 'combined.txt');
+    }
+    function shareCombine() {
+      let t = document.getElementById('combineResult').textContent; if (!t) return;
+      if (confirm('コードブロック付きで共有しますか？')) t = '```
+' + t + '
+```'; shareText(t);
+    }
+    function downloadText(text, filename) {
+      const b = new Blob([text], { type: 'text/plain' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = filename; a.click();
+    }
+    function shareText(text) {
+      if (navigator.share) navigator.share({ text });
+      else navigator.clipboard.writeText(text).then(() => alert('コピーしました'));
+    }
+  </script>
+</body>
 </html>
