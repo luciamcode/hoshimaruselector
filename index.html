@@ -1,5 +1,4 @@
-<!DOCTYPE html><html lang="ja"><head>
-  <meta charset="UTF-8" />
+<!DOCTYPE html><html lang="ja"><head>  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ことば一撰〜言の葉を選る庵</title>
   <!-- PWA対応 -->
@@ -123,7 +122,7 @@
     <label>サイズ:<input type="number" id="sliceSize" value="10000" min="1"></label>
     <span id="charCount">文字数: 0</span>
   </div>
-  <textarea id="input" oninput="updateCharCount()" placeholder="テキストを入力..."></textarea>
+  <textarea id="input" placeholder="テキストを入力..."></textarea>
   <div class="controls">
     <button onclick="splitText()">分割</button>
     <button onclick="resetSegmentsOnly()">やり直し（分割だけ）</button>
@@ -138,120 +137,37 @@
     <pre id="combineResult"></pre>
   </div>
   <script>
-    // PWA Service Worker 登録
-    // 共通テキスト送信関数
-    function openWithURL(url, text) {
-      const encoded = encodeURIComponent(text);
-      window.open(`${url}?text=${encoded}`, '_blank');
-    }
-    // URLパラメータ受信
-    window.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.search);
-      const incoming = params.get('text');
-      if (incoming) {
-        document.getElementById('input').value = decodeURIComponent(incoming);
-        updateCharCount();
-      }
-    });
-    let originalText = '';
-    const input = document.getElementById('input');
-    const segmentsDiv = document.getElementById('segments');
-    const charCountSpan = document.getElementById('charCount');
-    function updateCharCount() {
-      charCountSpan.textContent = `文字数: ${input.value.length}`;
-    }
-    document.getElementById('fileInput').addEventListener('change', e => {
-      const file = e.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => { originalText = ev.target.result; input.value = originalText; updateCharCount(); };
-      reader.readAsText(file, 'UTF-8');
-    });
-    function resetSegmentsOnly() {
-      segmentsDiv.innerHTML = '';
-      document.getElementById('combineActions').style.display = 'none';
-    }
-    function clearAll() {
-      input.value = '';
-      updateCharCount();
-      resetSegmentsOnly();
-    }
-    function splitText() {
-      resetSegmentsOnly();
-      const mode = document.querySelector('input[name="mode"]:checked').value;
-      const size = parseInt(document.getElementById('sliceSize').value, 10) || 1;
-      const text = input.value;
-      let parts = [];
-      if (mode === 'chars') {
-        for (let i = 0; i < text.length; i += size) parts.push(text.slice(i, i + size));
-      } else if (mode === 'ptag') {
-        const pblocks = text.match(/<p>[\s\S]*?<\/p>/gi) || [];
-        let current = '';
-        pblocks.forEach(block => {
-          if (current.length + block.length > size && current) { parts.push(current); current = block; } else { current += block; }
-        });
-        if (current) parts.push(current);
-      } else if (mode === 'star') {
-        parts = (text.match(/★[^★]+★/g) || []).map(s => s.slice(1, -1));
-      }
-      parts = parts.map(part => part.replace(/<\/p>/g, '</p>\n'));
-      parts.forEach((part, i) => {
-        const seg = document.createElement('div'); seg.className = 'segment';
-        const h3 = document.createElement('h3'); h3.textContent = `Part ${i+1}`; seg.appendChild(h3);
-        const chk = document.createElement('input'); chk.type = 'checkbox'; chk.id = `check${i}`; seg.appendChild(chk);
-        const ta = document.createElement('textarea'); ta.value = part; seg.appendChild(ta);
-        const saveBtn = document.createElement('button'); saveBtn.textContent = '保存'; saveBtn.onclick = () => downloadText(ta.value, `part${i+1}.txt`); seg.appendChild(saveBtn);
-        const shareBtn = document.createElement('button'); shareBtn.textContent = '共有'; shareBtn.onclick = () => {
-          let t = ta.value;
-          if (confirm('コードブロック付きで共有しますか？')) t = '```
-' + t + '
-```';
-          shareText(t);
-        }; seg.appendChild(shareBtn);
-        const starBtn = document.createElement('button'); starBtn.textContent = '★抽出'; starBtn.className = 'starExtractBtn'; starBtn.onclick = () => {
-          const matches = ta.value.match(/★[^★]+★/g) || [];
-          ta.value = matches.map(s => s.slice(1, -1)).join('\n');
-        }; seg.appendChild(starBtn);
-        // 追加：各庵送信ボタン
-        const targets = [
-          {label:'PSA', url:'https://luciamcode.github.io/PSA_kotonoha/'},
-          {label:'うつりに', url:'https://luciamcode.github.io/hana_utsurini/'},
-          {label:'エディタ', url:'https://luciamcode.github.io/kotonoha_editor/'},
-        ];
-        targets.forEach(tgt => {
-          const btn = document.createElement('button'); btn.textContent = `→ ${tgt.label}`;
-          btn.onclick = () => openWithURL(tgt.url, ta.value);
-          seg.appendChild(btn);
-        });
-        segmentsDiv.appendChild(seg);
-      });
-      if (parts.length) document.getElementById('combineActions').style.display = 'block';
-    }
-    function combineSelected() {
-      let combined = '';
-      document.querySelectorAll('.segment').forEach((seg, idx) => {
-        const cb = seg.querySelector('input[type="checkbox"]');
-        if (cb && cb.checked) combined += seg.querySelector('textarea').value + '\n';
-      });
-      const result = document.getElementById('combineResult'); result.textContent = combined;
-      document.getElementById('combineCount').textContent = combined.length;
-    }
-    function saveCombine() {
-      const t = document.getElementById('combineResult').textContent; if (!t) return; downloadText(t, 'combined.txt');
-    }
-    function shareCombine() {
-      let t = document.getElementById('combineResult').textContent; if (!t) return;
-      if (confirm('コードブロック付きで共有しますか？')) t = '```
-' + t + '
-```'; shareText(t);
-    }
-    function downloadText(text, filename) {
-      const b = new Blob([text], { type: 'text/plain' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = filename; a.click();
-    }
-    function shareText(text) {
-      if (navigator.share) navigator.share({ text });
-      else navigator.clipboard.writeText(text).then(() => alert('コピーしました'));
-    }
+    function updateCharCount(inputEl, counterEl) {
+      counterEl.textContent = `文字数: ${inputEl.value.length}`;
+    }function openWithURL(url, text) {
+  const encoded = encodeURIComponent(text);
+  window.open(`${url}?text=${encoded}`, '_blank');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('input');
+  const segmentsDiv = document.getElementById('segments');
+  const charCountSpan = document.getElementById('charCount');
+
+  input.addEventListener('input', () => updateCharCount(input, charCountSpan));
+  const params = new URLSearchParams(window.location.search);
+  const incoming = params.get('text');
+  if (incoming) {
+    input.value = decodeURIComponent(incoming);
+    updateCharCount(input, charCountSpan);
+  }
+
+  document.getElementById('fileInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      input.value = ev.target.result;
+      updateCharCount(input, charCountSpan);
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+});
+
   </script>
-</body>
-</html>
+</body></html>
