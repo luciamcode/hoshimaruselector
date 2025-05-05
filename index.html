@@ -1,7 +1,6 @@
 <!DOCTYPE html><html lang="ja"><head>  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ことば一撰〜言の葉を選る庵</title>
-  <!-- PWA対応 -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="kotoba_icon-192.png" />
   <meta name="theme-color" content="#fafafa" />
@@ -122,7 +121,7 @@
     <label>サイズ:<input type="number" id="sliceSize" value="10000" min="1"></label>
     <span id="charCount">文字数: 0</span>
   </div>
-  <textarea id="input" placeholder="テキストを入力..."></textarea>
+  <textarea id="input" oninput="updateCharCount()" placeholder="テキストを入力..."></textarea>
   <div class="controls">
     <button onclick="splitText()">分割</button>
     <button onclick="resetSegmentsOnly()">やり直し（分割だけ）</button>
@@ -136,38 +135,6 @@
     <button onclick="shareCombine()">共有結合</button>
     <pre id="combineResult"></pre>
   </div>
-  <script>
-    function updateCharCount(inputEl, counterEl) {
-      counterEl.textContent = `文字数: ${inputEl.value.length}`;
-    }function openWithURL(url, text) {
-  const encoded = encodeURIComponent(text);
-  window.open(`${url}?text=${encoded}`, '_blank');
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  const input = document.getElementById('input');
-  const segmentsDiv = document.getElementById('segments');
-  const charCountSpan = document.getElementById('charCount');
-
-  input.addEventListener('input', () => updateCharCount(input, charCountSpan));
-  const params = new URLSearchParams(window.location.search);
-  const incoming = params.get('text');
-  if (incoming) {
-    input.value = decodeURIComponent(incoming);
-    updateCharCount(input, charCountSpan);
-  }
-
-  document.getElementById('fileInput').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      input.value = ev.target.result;
-      updateCharCount(input, charCountSpan);
-    };
-    reader.readAsText(file, 'UTF-8');
-  });
-});
-
-  </script>
-</body></html>
+  <script src="script.js"></script>
+</body>
+</html>
