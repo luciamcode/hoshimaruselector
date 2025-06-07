@@ -257,6 +257,56 @@
       if (navigator.share) navigator.share({ text });
       else navigator.clipboard.writeText(text).then(() => alert('コピーしました'));
     }
+
+
+/**
+ * Markdown を「- 」で始まるノード単位で切り分け、maxChars以内のチャンクにまとめる
+ * @param {string} markdown - 元の Markdown テキスト
+ * @param {number} maxChars - １チャンクの最大文字数（改行含む）
+ * @returns {string[]} 分割後のチャンク配列
+ */
+function splitMarkdownByNode(markdown, maxChars) {
+  // ノードごとにマッチ：先頭が "- " の行と、それに続くインデント行をまとめる
+  const nodeRegex = /^- [^\r\n]+(?:\r?\n(?!- [^\r\n]).*)*/gm;
+  // 全ノードを抽出（見つからないときはまるごと１つのノード扱い）
+  const nodes = markdown.match(nodeRegex) || [markdown];
+  
+  const chunks = [];
+  let current = '';
+
+  for (const node of nodes) {
+    // ノード末尾に必ず改行を保持
+    const nodeBlock = node.trimEnd() + '\n\n';
+    if (current.length + nodeBlock.length > maxChars) {
+      // いまのチャンクを確定して、新しいチャンクを開始
+      chunks.push(current.trimEnd());
+      current = nodeBlock;
+    } else {
+      // まだ余裕があれば続ける
+      current += nodeBlock;
+    }
+  }
+
+  // 残りを最後のチャンクとして追加
+  if (current.trim()) {
+    chunks.push(current.trimEnd());
+  }
+
+  return chunks;
+}
+
+// --- 使い方例 ---
+const md = `- リストアイテム1…
+- リストアイテム2…
+- リストアイテム3…
+…`; 
+
+const maxChars = 10000;
+const parts = splitMarkdownByNode(md, maxChars);
+console.log(parts);
+
+
+
   </script>
 </body>
 </html>
